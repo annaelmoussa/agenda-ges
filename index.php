@@ -15,6 +15,7 @@ $logger->pushHandler(new StreamHandler(__DIR__ . '/logs/app.log', Logger::WARNIN
 // Ajout des en-têtes de sécurité
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
+header("X-Robots-Tag: noindex, nofollow");
 header("Content-Security-Policy: default-src 'self'; script-src 'none'; object-src 'none';");
 
 try {

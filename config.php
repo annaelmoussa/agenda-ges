@@ -10,7 +10,7 @@ $dotenv->safeLoad();
 $userConfig = [
     'MYGES_USERNAME' => $_ENV['MYGES_USERNAME'] ?? 'valeur_par_defaut_username',
     'MYGES_PASSWORD' => $_ENV['MYGES_PASSWORD'] ?? 'valeur_par_defaut_password',
-    'TOKEN' => $_ENV['TOKEN'] ?? 'valeur_par_defaut_token'
+    'TOKEN' => $_ENV['MYGES_TOKEN'] ?? 'valeur_par_defaut_token'
 ];
 
 define('USER_CONFIG', $userConfig);
