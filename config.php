@@ -6,10 +6,12 @@ require_once 'vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->safeLoad();
 
-// Constant name can be the firstname of the user
-// Exemple : define('MATTHIEU', array('MYGES_USERNAME' => 'CHANGEME', 'MYGES_PASSWORD' => 'CHANGEME'));
-define('CHANGEME', array(
-    'MYGES_USERNAME' => $_ENV['MYGES_USERNAME'], 
-    'MYGES_PASSWORD' => $_ENV['MYGES_PASSWORD']
-));
+// Construction du tableau de configuration de l'utilisateur à partir des variables d'environnement
+$userConfig = [
+    'MYGES_USERNAME' => $_ENV['MYGES_USERNAME'] ?? 'valeur_par_defaut_username',
+    'MYGES_PASSWORD' => $_ENV['MYGES_PASSWORD'] ?? 'valeur_par_defaut_password',
+    'TOKEN' => $_ENV['TOKEN'] ?? 'valeur_par_defaut_token'
+];
+
+define('USER_CONFIG', $userConfig);
 

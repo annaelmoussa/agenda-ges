@@ -6,14 +6,21 @@ use Spatie\IcalendarGenerator\Components\Event;
 require_once  'vendor/autoload.php';
 require_once 'config.php';
 
-if(false === isset($_GET['name']) || false === defined(strtoupper($_GET['name']))) {
-    echo 'Parameter \'name\' is missing or bad';
+
+if (!isset($_GET['token'])) {
+    echo 'Paramètre token manquant';
+    die();
+}
+
+// Vérification du jeton
+if ($_GET['token'] !== USER_CONFIG['TOKEN']) {
+    echo 'Accès non autorisé';
     die();
 }
 
 try {
-    $client = new MyGes\Client('skolae-app', constant(strtoupper($_GET['name']))['MYGES_USERNAME'], constant(strtoupper($_GET['name']))['MYGES_PASSWORD']);
-} catch(MyGes\Exceptions\BadCredentialsException $e) {
+    $client = new MyGes\Client('skolae-app', USER_CONFIG['MYGES_USERNAME'], USER_CONFIG['MYGES_PASSWORD']);
+} catch (MyGes\Exceptions\BadCredentialsException $e) {
     die($e->getMessage()); // bad credentials
 }
 
@@ -29,7 +36,7 @@ $agenda = $me->getAgenda($start->getTimestamp() * 1000, $end->getTimestamp() * 1
 
 $calendar = new Calendar();
 
-foreach($agenda as $a) {
+foreach ($agenda as $a) {
 
     $start = new DateTime();
     $s = $start->setTimestamp($a->start_date / 1000);
@@ -37,15 +44,16 @@ foreach($agenda as $a) {
     $e = $end->setTimestamp($a->end_date / 1000);
 
     $address = '';
-    if(isset($a->rooms[0]->name) && isset($a->rooms[0]->campus)) {
-        $address = $a->rooms[0]->campus.' - '.$a->rooms[0]->name;
+    if (isset($a->rooms[0]->name) && isset($a->rooms[0]->campus)) {
+        $address = $a->rooms[0]->campus . ' - ' . $a->rooms[0]->name;
     }
 
-    $calendar->event(Event::create($a->name)
-        ->startsAt($s)
-        ->endsAt($e)
-        ->address($address)
-        ->description($a->discipline->teacher)
+    $calendar->event(
+        Event::create($a->name)
+            ->startsAt($s)
+            ->endsAt($e)
+            ->address($address)
+            ->description($a->discipline->teacher)
     );
 }
 
