@@ -2,32 +2,46 @@
 
 use Spatie\IcalendarGenerator\Components\Calendar;
 use Spatie\IcalendarGenerator\Components\Event;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
 
 require_once 'vendor/autoload.php';
 require_once 'config.php';
 
+// Configuration du logger
+$logger = new Logger('agendaGES');
+$logger->pushHandler(new StreamHandler(__DIR__ . '/logs/app.log', Logger::WARNING));
+
 // Ajout des en-têtes de sécurité
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
-
-// Validation et Sanitisation de l'entrée
-$token = filter_input(INPUT_GET, 'token', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-
-if (!$token) {
-    handleError('Paramètre token manquant');
-}
-
-// Vérification du jeton
-if ($token !== USER_CONFIG['TOKEN']) {
-    handleError('Accès non autorisé');
-}
+header("Content-Security-Policy: default-src 'self'; script-src 'none'; object-src 'none';");
 
 try {
-    $client = new MyGes\Client('skolae-app', USER_CONFIG['MYGES_USERNAME'], USER_CONFIG['MYGES_PASSWORD']);
+    $token = validateToken();
+    $client = createClient();
     $agenda = fetchAgenda($client);
     outputCalendar($agenda);
 } catch (Exception $e) {
-    handleError('Erreur lors de la connexion ou de la récupération des données : ' . $e->getMessage());
+    $logger->error($e->getMessage());
+    handleError($e->getMessage());
+}
+
+function validateToken()
+{
+    $token = filter_input(INPUT_GET, 'token', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    if (!$token || strlen($token) !== 32) {
+        throw new Exception('Paramètre token manquant ou invalide');
+    }
+    if ($token !== USER_CONFIG['TOKEN']) {
+        throw new Exception('Accès non autorisé');
+    }
+    return $token;
+}
+
+function createClient()
+{
+    return new MyGes\Client('skolae-app', USER_CONFIG['MYGES_USERNAME'], USER_CONFIG['MYGES_PASSWORD']);
 }
 
 function fetchAgenda($client)
@@ -43,17 +57,17 @@ function outputCalendar($agenda)
 {
     $calendar = new Calendar();
 
-    foreach ($agenda as $a) {
-        $start = (new DateTime())->setTimestamp($a->start_date / 1000);
-        $end = (new DateTime())->setTimestamp($a->end_date / 1000);
-        $address = isset($a->rooms[0]->name) && isset($a->rooms[0]->campus) ? $a->rooms[0]->campus . ' - ' . $a->rooms[0]->name : '';
+    foreach ($agenda as $event) {
+        $start = (new DateTime())->setTimestamp($event->start_date / 1000);
+        $end = (new DateTime())->setTimestamp($event->end_date / 1000);
+        $address = isset($event->rooms[0]->name) ? $event->rooms[0]->campus . ' - ' . $event->rooms[0]->name : '';
 
         $calendar->event(
-            Event::create($a->name)
+            Event::create($event->name)
                 ->startsAt($start)
                 ->endsAt($end)
                 ->address($address)
-                ->description($a->discipline->teacher)
+                ->description($event->discipline->teacher)
         );
     }
 
@@ -64,5 +78,8 @@ function outputCalendar($agenda)
 
 function handleError($message)
 {
-    die($message);
+    global $logger;
+    $logger->error($message);
+    header('Location: error_page.php');
+    exit();
 }
