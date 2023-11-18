@@ -31,7 +31,7 @@ try {
 function validateToken()
 {
     $token = filter_input(INPUT_GET, 'token', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    if (!$token || strlen($token) !== 32) {
+    if (!$token || strlen($token) < 32) {
         throw new Exception('Paramètre token manquant ou invalide');
     }
     if ($token !== USER_CONFIG['TOKEN']) {
